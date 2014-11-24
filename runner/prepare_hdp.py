@@ -414,7 +414,7 @@ def setup_cluster(conn, master_nodes, slave_nodes, ambari_nodes, OPTS, deploy_ss
 
   # NOTE: SUSE AMI doesn't have "ec2-user" and can be logged in directly as root.
   print "Enabling root on all nodes..."
-  OPTS.user = "root"
+  OPTS.user = "ec2-user"
   concurrent_map(enable_root, all_nodes)
 
   print "Copying SSH key %s to ambari & master..." % OPTS.identity_file
@@ -458,11 +458,11 @@ def configure_node(node):
   # BUG-20060 for Ambari 1.6.1 on SLES. This solves timeout/hanging issue when
   # installing ambari-agent from the UI.
   cmd_for_suse = """
-        zypper install -y screen;
-        zypper install -y git;
-        /sbin/rcSuSEfirewall2 stop;
-        zypper --no-gpg-checks refresh;
-        shutdown -r now;
+        sudo zypper install -y screen;
+        sudo zypper install -y git;
+        sudo /sbin/rcSuSEfirewall2 stop;
+        sudo zypper --no-gpg-checks refresh;
+        sudo shutdown -r now;
         """
   ssh(node.public_dns_name, OPTS, cmd_for_suse)
 
@@ -490,12 +490,13 @@ def setup_ambari_master(ambari, OPTS):
   ambari_setup_cmd = """yes "" | ambari-server setup"""
 
   cmd_for_suse = """
+        
         wget %s;
-        cp ambari.repo /etc/zypp/repos.d;
-        zypper install -y ambari-server;
+        sudo cp ambari.repo /etc/zypp/repos.d;
+        sudo zypper install -y ambari-server;
         %s;
-        ambari-server start;
-        ambari-server status;
+        sudo ambari-server start;
+        sudo ambari-server status;
         """ % (AMBARI_REPO_URL, ambari_setup_cmd)
 
   ssh(ambari.public_dns_name, OPTS, cmd_for_suse, stdin=None)
